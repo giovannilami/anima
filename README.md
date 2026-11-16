@@ -8,7 +8,7 @@ Anima is an adaptation and extension of [Animator by Crim](https://github.com/cr
 
 ## Install
 
-You need **norns**, a **16×8 Grid** and **Molly the Poly**. MIDI, Crow and n.b. are optional output destinations.
+You need **norns**, a **16×8 Grid** and **Molly the Poly**. MIDI, Crow and n.b. are optional (but suggested) output destinations.
 
 1. If Molly the Poly is not already installed, enter this in the [Maiden](https://monome.org/docs/norns/maiden/) REPL:
 
