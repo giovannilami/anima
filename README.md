@@ -30,7 +30,7 @@ Anima requires both the `MollyThePoly` engine and its Lua library. For a manual 
 
 **Canvas** is for drawing and arranging the sequences. **Lines** controls how each track plays. **Intersections** chooses what happens when playheads meet. The Grid layout and the norns readout change together when you switch page.
 
-The images below are enlarged **2:1 screen schematics**, matching the proportions of the 128×64 norns display. Their text and row positions follow the script's screen code; values are examples. Canvas cells are enlarged for clarity, with diagonally adjacent steps touching at their corners. The device uses smaller, spaced squares and its own font.
+The screen illustrations use the script's **128×64 layout**, displayed at 3× scale (384×192). Steps are drawn at their actual **3×3 px size on a 5 px pitch**. Text uses the original **norns.ttf** typeface at **8 px**, matching the default norns font and Anima's font size. Glyphs are embedded as vector outlines so the font and spacing remain consistent in every browser. These are illustrative states, not photographs of the device; values vary during use.
 
 **Reading the Grid maps:** coordinates are **(column, row)**, counted from the top-left. The drawings contain all 128 square pads, with equal spacing on both axes. Colors distinguish functional groups in this guide; the real Grid uses monochrome brightness. Labels are a reference overlay, not text displayed on the hardware. Blank pads remain visible so you can locate the controls. On Lines and Intersections, each row is its numbered track; only existing tracks have lit controls. The bottom-right **(16,8)** always opens page selection.
 
