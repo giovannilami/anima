@@ -32,9 +32,21 @@ Sono necessari sia il motore `MollyThePoly` sia la sua libreria Lua. Per install
 
 Le immagini sono **schemi ingranditi in rapporto 2:1**, come il display norns da 128×64 pixel. Testi e posizione delle righe seguono il codice; i valori sono esempi. Le celle di Canvas sono ingrandite per rendere leggibili le linee e fare toccare per lo spigolo gli step diagonali. Sul dispositivo i quadratini sono più piccoli e distanziati, e il font è quello di norns.
 
+**Come leggere le mappe Grid:** le coordinate sono **(colonna, riga)** e partono dall'angolo in alto a sinistra. I disegni mostrano tutti i 128 pad quadrati, con lo stesso passo sui due assi. I colori distinguono i gruppi di funzioni nella guida; sulla Grid reale le indicazioni sono monocromatiche e usano la luminosità. Le sigle sono una legenda, non scritte presenti sull'hardware. I pad vuoti rimangono disegnati per aiutare a trovare i controlli. Su Lines e Intersections ogni riga corrisponde alla traccia con quel numero; solo le tracce esistenti hanno controlli illuminati. **(16,8)** apre sempre la selezione pagina.
+
 ### Canvas: disegnare le sequenze
 
 ![Canvas: una linea orizzontale, una verticale e una diagonale a 45 gradi con tre incroci distinti](docs/images/canvas.svg)
+
+**Grid: area di disegno e riga di performance**
+
+![Grid Canvas: sette righe di disegno, otto snapshot, due registratori di pattern, undo, ALT e navigazione](docs/images/grid-canvas.svg)
+
+Le righe **1–7** sono l'area di disegno. Le tre linee usano le stesse coordinate dell'immagine dello schermo sopra. Per la diagonale, per esempio, tieni **(5,1)** e premi **(11,7)**: la distanza è di sei step su entrambi gli assi. Gli otto snapshot sono nei primi otto pad della **riga 8**, separati dal disegno. Tieni prima **ALT (15,8)**, poi premi uno snapshot per memorizzare la scena; rilascia ALT quando hai finito. Il tap semplice richiama lo snapshot. Salva il doodle per conservarli su disco.
+
+**P1 (10,8)** e **P2 (11,8)** registrano ordine e tempi dei richiami snapshot. Premi un pattern vuoto per iniziare, richiama gli snapshot, poi ripremi il pattern per terminare la registrazione e avviare il ciclo. I tap successivi fermano o riavviano la riproduzione. Avviare un pattern vuoto o fermo interrompe l'altro. Tenendo ALT, premere un pattern già registrato lo cancella e avvia una nuova registrazione; se sta registrando, ALT + il suo pad ferma e cancella quella registrazione. Quando la quantizzazione dei pattern è attiva, gli eventi attendono il confine di quantizzazione impostato.
+
+**U (13,8)** annulla l'ultima modifica manuale; **ALT + U** la ripristina. Undo/redo non recupera gli snapshot sovrascritti. **(9,8), (12,8) e (14,8)** non sono assegnati durante l'uso normale di Canvas. Tenendo NAV, (13,8), (14,8) e (15,8) diventano temporaneamente selettori pagina.
 
 Ogni linea è una traccia, con una testina che ne percorre gli step. Fino a **otto tracce** condividono un'area di disegno di **16 colonne × 7 righe**. L'ultima riga della Grid contiene i controlli di performance. La nota associata a ogni cella dipende dalla scala e dalla trasposizione globale: spostare una linea cambia le celle attraversate e le note suonate.
 
@@ -68,6 +80,16 @@ In basso compare normalmente `K2 reset   K3 clear`, sostituito temporaneamente d
 
 ![Lines: traccia selezionata, direzione, rate, uscita, probabilità, ratchet e valori modulati](docs/images/lines.svg)
 
+**Grid: gli stessi controlli ripetuti per ogni traccia**
+
+![Grid Lines: mute e solo, quattro direzioni, ratchet, probabilità e sette rate sulle otto righe traccia](docs/images/grid-lines.svg)
+
+Leggi **una riga in orizzontale** per controllare la sua traccia. Per esempio **(3,2)** sceglie la direzione indietro della traccia 2 e **(11,2)** il suo rate ÷2. **(1,2)** attiva mute con un tap oppure solo con una pressione di circa **450 ms**. Una seconda pressione lunga disattiva solo. Il gesto lungo non esegue anche il tap mute.
+
+I simboli delle direzioni sono **>** avanti, **<** indietro, **<>** pendolo e **?** casuale. **R** e **P** attivano/disattivano ratchet e probabilità con un tap. Tenendoli per circa 450 ms congeli o rilasci il rispettivo valore senza cambiarne l'interruttore. Per esempio, tieni **(7,2)** per congelare la probabilità della traccia 2 mentre le altre destinazioni LFO continuano a muoversi. Il freeze non assegna una nuova destinazione e non attiva da solo la probabilità.
+
+La colonna **8** separa articolazione e rate. La colonna **16** non contiene controlli di traccia: solo il pad in basso è NAV. Nella riga 8, le colonne 1–15 controllano la **traccia 8**, non gli snapshot. Tieni NAV prima di usare i selettori pagina per evitare di modificare quella traccia.
+
 Ogni riga Grid corrisponde a una traccia. **E1** sceglie la traccia; anche agire sui suoi controlli Grid la seleziona. Lo schermo riporta i suoi valori. **E2** sposta solo quella traccia in verticale, **E3** in orizzontale.
 
 | Colonna Grid | Funzione sulla traccia della riga |
@@ -98,6 +120,18 @@ L'immagine si legge dall'alto verso il basso:
 
 ![Intersections: triade minore, retrigger, destinazioni LFO congelate e valori effettivi](docs/images/intersections.svg)
 
+**Grid: gruppi armonico, ritmico e modulazione**
+
+![Grid Intersections: cinque azioni armoniche, sei ritmiche, master LFO e anteprima su ciascuna riga](docs/images/grid-intersections.svg)
+
+Ogni riga si legge **scelta armonica → scelta ritmica → LFO → anteprima**. **+8 / −8** significano un'ottava sopra/sotto, non otto semitoni. **5th** aggiunge una quinta; **tri** e **7th** scelgono una triade o un accordo di settima, con il tipo impostato in TRACK.
+
+Le sigle ritmiche sono **M** mute, **RT** retrigger, **REV** reverse, **RS** reset self, **RO** reset others e **RA** reset all. Queste scelte entrano in gioco all'intersezione. Per esempio, premi **(4,3)** per la triade della traccia 3 e **(8,3)** per il retrigger della stessa traccia. Ripremere uno dei due pad selezionati disattiva quel gruppo mantenendo l'altra scelta.
+
+**LFO (14,riga)** è il master delle modulazioni della traccia: tap per on/off, pressione di circa 450 ms per congelare tutte le destinazioni assegnate o rilasciare il freeze di gruppo. Le assegnazioni si creano in EDIT → LFO. **V (15,riga)** mostra l'anteprima solo mentre resta premuto. Per esempio, tieni **(15,3)** per vedere la traccia 3 sullo schermo norns; rilascia per tornare ai valori di Intersections.
+
+Le colonne **6** e **13** separano i gruppi e non eseguono azioni. Anche la colonna **16** è vuota, tranne NAV in basso. La riga 8 controlla la traccia 8 fino a quando tieni NAV.
+
 Per ogni traccia puoi combinare un'azione armonica e una ritmica. Entrano in gioco quando più testine ammesse a suonare raggiungono la stessa cella attiva sullo stesso impulso. Rate, direzioni, pause e probabilità cambiano la frequenza di questi incontri: l'incrocio del disegno da solo non applica un effetto continuo.
 
 Ogni riga Grid continua a rappresentare una traccia. Premi l'azione desiderata per selezionarla; premila di nuovo per riportare quel gruppo a `none`. Le due azioni si possono combinare.
@@ -120,6 +154,12 @@ La riga LFO può mostrare anche `off`, `ON` o `ON no targets`. In basso, `Poff` 
 ### Cambiare pagina
 
 ![Selezione pagina con i tre selettori sull'ultima riga Grid](docs/images/page-select.svg)
+
+**La Grid mentre tieni NAV**
+
+![Navigazione Grid: angolo in basso a destra premuto e selettori Canvas 13, Lines 14, Intersections 15](docs/images/grid-navigation.svg)
+
+Premi e tieni **NAV (16,8) prima** di toccare il selettore pagina. Le altre funzioni dell'ultima riga sono sospese: **(13,8)** seleziona Canvas, **(14,8)** Lines e **(15,8)** Intersections. Rilascia i pad per tornare ai controlli normali. Il gesto funziona da ogni pagina; tenere NAV da solo non cambia pagina. Durante questa vista gli altri pad non modificano il contenuto.
 
 Tieni premuto il pad in basso a destra **(16,8)**, premi un selettore e rilascia:
 

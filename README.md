@@ -32,9 +32,21 @@ Anima requires both the `MollyThePoly` engine and its Lua library. For a manual 
 
 The images below are enlarged **2:1 screen schematics**, matching the proportions of the 128×64 norns display. Their text and row positions follow the script's screen code; values are examples. Canvas cells are enlarged for clarity, with diagonally adjacent steps touching at their corners. The device uses smaller, spaced squares and its own font.
 
+**Reading the Grid maps:** coordinates are **(column, row)**, counted from the top-left. The drawings contain all 128 square pads, with equal spacing on both axes. Colors distinguish functional groups in this guide; the real Grid uses monochrome brightness. Labels are a reference overlay, not text displayed on the hardware. Blank pads remain visible so you can locate the controls. On Lines and Intersections, each row is its numbered track; only existing tracks have lit controls. The bottom-right **(16,8)** always opens page selection.
+
 ### Canvas: draw the sequences
 
 ![Canvas screen: horizontal, vertical and 45-degree diagonal sequences crossing at three distinct cells](docs/images/canvas.svg)
+
+**Grid: drawing area and performance row**
+
+![Canvas Grid: seven drawing rows, eight snapshots, two pattern recorders, undo, ALT and navigation](docs/images/grid-canvas.svg)
+
+Rows **1–7** are the drawing surface. The three lines in this map use the same coordinates as the screen illustration above. For example, hold **(5,1)** and press **(11,7)** for the diagonal: both axes span six steps. The eight snapshots are the first eight pads of **row 8**, separate from the drawing area. Hold **ALT (15,8)** first, then tap a snapshot to store the current scene; release ALT when finished. A plain snapshot tap recalls it. Save the doodle to keep snapshots on disk.
+
+**P1 (10,8)** and **P2 (11,8)** record the order and timing of snapshot recalls. Tap an empty pattern to start recording, tap snapshot pads, then tap the pattern again to finish recording and start its loop. Further taps stop or restart playback. Starting an empty or stopped pattern stops the other pattern. With ALT held, tapping a stored pattern clears it and starts a fresh recording; if it is currently recording, ALT + its pad stops and clears that recording. With pattern quantization enabled, these events wait for the configured quantization boundary.
+
+**U (13,8)** undoes the last manual edit; **ALT + U** redoes it. Undo/redo does not restore overwritten snapshots. **(9,8), (12,8) and (14,8)** are unassigned during normal Canvas use. Holding NAV temporarily turns (13,8), (14,8) and (15,8) into page selectors instead.
 
 Each line is a track, with its own playhead travelling through its steps. Up to **eight tracks** share a **16-column × 7-row** drawing area. The bottom Grid row contains performance controls. A cell's pitch comes from the composition's scale and global transpose settings. Changing a line's position changes the cells it visits and the pitches it plays.
 
@@ -68,6 +80,16 @@ The footer normally reads `K2 reset   K3 clear`. Save feedback temporarily repla
 
 ![Lines screen: selected track, direction, rate, output, probability, ratchet and mapped values](docs/images/lines.svg)
 
+**Grid: the same controls on each track row**
+
+![Lines Grid: mute and solo, four directions, ratchet, probability and seven playback rates repeated over eight track rows](docs/images/grid-lines.svg)
+
+Read **across a row** to control one track. For example, **(3,2)** selects reverse for track 2; **(11,2)** selects ÷2 for that same track. **(1,2)** mutes it with a tap, or toggles solo with a hold of about **450 ms**. Hold again to release solo. A long hold does not also toggle mute.
+
+The direction symbols are **>** forward, **<** reverse, **<>** pendulum and **?** random. **R** and **P** switch ratchet and probability on/off with a tap. A roughly 450 ms hold toggles the corresponding value's freeze without also switching the control on/off. For instance, hold **(7,2)** to freeze track 2's probability value while its other LFO targets keep moving. Freeze does not assign a new LFO target or enable probability by itself.
+
+Column **8** is a gap between articulation and rate. Column **16** has no track control; only its bottom pad is NAV. On row 8, columns 1–15 still control **track 8**: they are not snapshots on this page. Hold NAV first to use the page shortcuts without changing track 8.
+
 Each Grid row represents one track. Select a track with **E1**, or use that track's controls on Grid. The norns screen reports the selected track; **E2** moves that track vertically and **E3** moves it horizontally.
 
 | Grid column | Action on that row's track |
@@ -98,6 +120,18 @@ Read the example screen from top to bottom:
 
 ![Intersections screen: minor triad, retrigger, held LFO targets and effective performance values](docs/images/intersections.svg)
 
+**Grid: harmonic, rhythmic and modulation groups**
+
+![Intersections Grid: five harmonic actions, six rhythmic actions, LFO master and track preview on each row](docs/images/grid-intersections.svg)
+
+Read each row as **harmonic choice → rhythmic choice → LFO → preview**. **+8 / −8** mean one octave up/down, not eight semitones. **5th** adds a fifth; **tri** and **7th** select a triad or seventh chord using the type configured in TRACK.
+
+The rhythmic labels are **M** mute, **RT** retrigger, **REV** reverse, **RS** reset self, **RO** reset others and **RA** reset all. These choices apply when an intersection occurs. For example, tap **(4,3)** for a triad on track 3, then **(8,3)** for retrigger on the same track. Tap either selected pad again to turn off that action group while keeping the other choice.
+
+**LFO (14,row)** controls that row's per-track modulation master. A tap switches it on/off; a roughly 450 ms hold freezes all currently assigned destinations, or releases the group freeze. It does not create mappings: assign them in EDIT → LFO. **V (15,row)** shows a track preview only for as long as the pad is held. For example, hold **(15,3)** to inspect track 3 on norns; release to return to its Intersections readout.
+
+Columns **6** and **13** separate the groups and perform no action. Column **16** is also unassigned except for NAV at the bottom. Row 8 controls track 8 until NAV is held.
+
 Choose one harmonic action and one rhythmic action for each track. These act when multiple eligible playheads reach the same enabled cell on the same pulse. Different rates, directions, rests and probability settings change when those meetings occur. A visible crossing alone does not continuously apply an action.
 
 Each Grid row still represents a track. Press its desired action to select it; press that same pad again to return that action group to `none`. Harmonic and rhythmic actions can be combined.
@@ -120,6 +154,12 @@ The LFO line can also show `off`, `ON`, or `ON no targets`. The footer uses `Pof
 ### Switch page
 
 ![Page selection screen with the three bottom-row page shortcuts](docs/images/page-select.svg)
+
+**The Grid while NAV is held**
+
+![Grid navigation overlay: hold the bottom-right pad and choose Canvas on 13, Lines on 14 or Intersections on 15](docs/images/grid-navigation.svg)
+
+Press and hold **NAV (16,8) before** touching a page pad. The other bottom-row functions are suspended: **(13,8)** selects Canvas, **(14,8)** Lines and **(15,8)** Intersections. Release both pads to resume normal controls. This combination works from every page; holding NAV alone does not switch pages. The other pads are inactive for editing during this overlay.
 
 Hold the bottom-right Grid pad **(16,8)**, press one of these pads, then release:
 

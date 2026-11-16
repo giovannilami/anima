@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="768" height="384" viewBox="0 0 128 64" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" width="384" height="192" viewBox="0 0 128 64" role="img" aria-labelledby="title desc">
 <title id="title">Anima: Track preview</title>
 <desc id="desc">Temporary preview of track 3 while holding column 15 on row 3 in Intersections. A 45-degree diagonal has corner-touching cells. Release returns to parameters.</desc>
 <rect width="128" height="64" fill="#000000"/>

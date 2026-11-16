@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="768" height="384" viewBox="0 0 128 64" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" width="384" height="192" viewBox="0 0 128 64" role="img" aria-labelledby="title desc">
 <title id="title">Anima: Intersections</title>
 <desc id="desc">Selected track 1: minor triad and retrigger at intersections. Two of three mapped destinations held. Illustrative values; labels and row positions follow lib/ui.lua.</desc>
 <rect width="128" height="64" fill="#000000"/>

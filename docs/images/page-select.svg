@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="768" height="384" viewBox="0 0 128 64" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" width="384" height="192" viewBox="0 0 128 64" role="img" aria-labelledby="title desc">
 <title id="title">Anima: Page selection</title>
 <desc id="desc">Temporary screen while holding Grid pad 16,8. Bottom-row pads 13, 14 and 15 select Canvas, Lines and Intersections.</desc>
 <rect width="128" height="64" fill="#000000"/>

@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="768" height="384" viewBox="0 0 128 64" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" width="384" height="192" viewBox="0 0 128 64" role="img" aria-labelledby="title desc">
 <title id="title">Anima: Canvas</title>
 <desc id="desc">2:1 screen schematic. A horizontal line intersects a vertical line; a 45-degree diagonal intersects both at distinct cells. Diagonal cells touch only at their corners. Cells are enlarged for clarity; the device draws smaller squares.</desc>
 <rect width="128" height="64" fill="#000000"/>
