@@ -1,24 +1,17 @@
 local tab = require 'tabutil'
-local constants = include('lib/constants')
+local constants = include('anima/lib/constants')
 local STEP_NUM = constants.CANVAS_HEIGHT*constants.CANVAS_LENGTH
 local GRID_LEVELS = constants.GRID_LEVELS
-local INTERSECT_OPS = constants.INTERSECT_OPS
-local OUTPUTS = constants.OUTPUTS
-local AUDIO = constants.OUTPUT_AUDIO
-local MIDI = constants.OUTPUT_MIDI
-local AUDIO_MIDI = constants.OUTPUT_AUDIO_MIDI
-local CROW_II_JF = constants.OUTPUT_CROW_II_JF
-local CROW_II_SC = constants.OUTPUT_CROW_II_SC
-local CROW_CV = constants.OUTPUT_CROW_CV
-local CROW_CV_JF = constants.OUTPUT_CROW_CV_JF
-local AUDIO_CV_JF = constants.OUTPUT_AUDIO_CV_JF
-local helpers = include('lib/helpers')
+local helpers = include('anima/lib/helpers')
 local findPosition = helpers.findPosition
 local copyTable = helpers.copyTable
 local deepcopy = helpers.deepcopy
-local Sequencer = include('lib/Sequencer')
-local MusicUtil = require 'musicutil'
+local Sequencer = include('anima/lib/Sequencer')
+local Settings = include('anima/lib/track_settings')
+local Persistence = include('anima/lib/persistence')
+local Original=include('anima/lib/original')
 local MAX_SEQ_NUM = 8
+local LEGACY_DIV_TO_RATE = {2, 3, 4, 5, 8, 6, 9, 7}
 
 function initStepState()
   local steps = {}
@@ -27,8 +20,8 @@ function initStepState()
 end
 
 local animator = {}
+local performance = {}
 
-animator.noteOffMetro = metro.init()
 animator.original = {}
 animator.stepLevels = {}
 animator.redraw = function() end
@@ -39,8 +32,19 @@ animator.snapshots = {}
 animator.shouldResetAll = false
 animator.lastReplaced = 0
 animator.showIntroText = true
-animator.midiDevice = nil
 animator.name = 'untilted'
+
+-- Parameter actions run synchronously during a read/recall. Keep their
+-- musical actions, but publish no intermediate Grid or screen frames.
+-- Restore the outer state even if an action fails (nested recalls are safe).
+function animator.withUpdate(fn)
+  local previous=animator.updating
+  animator.updating=true
+  local result=table.pack(pcall(fn))
+  animator.updating=previous
+  if not result[1] then error(result[2],0) end
+  return table.unpack(result,2,result.n)
+end
 
 function updateEnabled(steps)
   for i=1,#steps do
@@ -70,7 +74,11 @@ function animator.addNewSequence(steps)
     index = #animator.sequencers+1
   end
   if animator.showIntroText then animator.showIntroText = false end
+  if animator.modulation then animator.modulation:reset(index) end
   animator.sequencers[index] = Sequencer.new({steps = steps}, index)
+  if animator.originalPlayback and animator.originalPlayback.enabled then
+    animator.sequencers[index].rateCount=1+(animator.originalPlayback.phase or 0)
+  end
   updateEnabled(steps)
   updateOnState(steps)
 end
@@ -78,117 +86,55 @@ end
 local Snapshot = {}
 function Snapshot.new(animator)
   local snapshot = {
-    sequencers = animator.sequencers,
-    on = animator.on,
-    enabled = animator.enabled,
-    divs = {},
-    intersects = {}
+    sequencers = deepcopy(animator.sequencers),
+    on = copyTable(animator.on),
+    enabled = copyTable(animator.enabled),
+    rates = {},
+    intersects = {},
+    harmonics = {},
+    rhythms = {},
+    trackSettings = {},
+    originalPhase=animator.originalPlayback and animator.originalPlayback.phase or 0
   }
   for i=1,MAX_SEQ_NUM do
-    snapshot.divs[i] = params:get('seq' .. i .. 'div')
-    snapshot.intersects[i] = params:get('seq' .. i .. 'intersect')
+    local seq = animator.sequencers[i]
+    snapshot.rates[i] = seq and seq.rate or params:get('seq' .. i .. 'rate')
+    snapshot.intersects[i] = seq and seq.intersect or params:get('seq' .. i .. 'intersect')
+    snapshot.harmonics[i] = seq and seq.harmonic or params:get('seq' .. i .. 'harmonic')
+    snapshot.rhythms[i] = seq and seq.rhythm or params:get('seq' .. i .. 'rhythm')
+    snapshot.trackSettings[i] = Settings.capture(i, seq)
   end
 
   return snapshot
 end
 
 function animator.count()
+  if animator.closing or animator.updating then return end
+  if animator.originalPlayback and animator.originalPlayback.enabled then return Original.count(animator) end
+  if animator.outputs and animator.outputs.begin_step then animator.outputs:begin_step() end
   local play = {}
   local findPos = findPosition
-  local noteOn = engine.noteOn
-  local noteOff = engine.noteOff
-  local numToFreq = MusicUtil.note_num_to_freq
-  local random = math.random
-  local floor = math.floor
   local slop = params:get('slop')
-  local minVel = params:get('min_velocity')
-  local maxVel = params:get('max_velocity')
-  local minLn = params:get('min_note_length')
-  local maxLn = params:get('max_note_length')
-  local metroInit = metro.init
-  local metroFree = metro.free
-  local output = OUTPUTS[params:get('output')]
-  local jfPlayNote = crow.ii.jf.play_note
-  local er_port = params:get('ER_port')
-
-  local useMidiCheck = {[MIDI] = true, [AUDIO_MIDI] = true}
-  local useMidi = useMidiCheck[output]
-
-  local useAudioCheck = {[AUDIO] = true, [AUDIO_MIDI] = true, [AUDIO_CV_JF] = true}
-  local useAudio = useAudioCheck[output]
-
-  local useJFCheck = {[CROW_II_JF] = true, [CROW_CV_JF] = true, [AUDIO_CV_JF] = true}
-  local useJF = useJFCheck[output]
-
-  local useSCCheck = {[CROW_II_SC] = true}
-  local useSC = useSCCheck[output]
-
-  local useCVCheck = {[CROW_CV] = true, [CROW_CV_JF] = true, [AUDIO_CV_JF] = true}
-  local useCV = useCVCheck[output]
-
-  local currentCrowOut = 1
-  local crowCVPlayed = 0
-
-  local currentSCOut = 0
-  local scCVPlayed = 0
-
-  local function playNote(note, channel)
-    if useJF then
-      jfPlayNote((note-60)/12, 5)
-    end
-
-    if useCV and crowCVPlayed < 2 then
-      crow.output[currentCrowOut].volts = (note-60)/12
-      crow.output[currentCrowOut+1].execute()
-      currentCrowOut = (currentCrowOut + 2) % 4
-      crowCVPlayed = crowCVPlayed + 1
-    end
-
-    -- ER 301 support
-    if useSC and scCVPlayed <= 8 then
-      crow.ii.er301.cv(currentSCOut + er_port,(note-60)/12)
-      crow.ii.er301.tr_pulse(currentSCOut + er_port)
-      currentSCOut = (currentSCOut + 1) % 8
-      scCVPlayed = scCVPlayed + 1
-    end
-    --
-
-    if useAudio or useMidi then
-      local velocity = random(minVel, maxVel)
-
-      if useMidi then animator.midiDevice:note_on(note, velocity, channel) end
-      if useAudio then
-        noteOn(note, numToFreq(note), velocity/127)
-      end
-
-      local noteOffMetro = metroInit()
-      noteOffMetro.event = function()
-        if useMidi then animator.midiDevice:note_off(note, nil, channel) end
-        if useAudio then noteOff(note) end
-        metroFree(noteOffMetro.id)
-      end
-      noteOffMetro.time = random(floor(minLn*100), floor(maxLn*100))/100
-      noteOffMetro.count = 1
-      noteOffMetro:start()
-    end
-  end
-
-  local function delayNote(note, channel)
-    local delay = metroInit()
-    delay.event = function()
-      playNote(note, channel)
-      metroFree(delay.id)
-    end
-    delay.time = random(slop)/1000
-    delay.count = 1
-    delay:start()
+  local hasSolo = false
+  for i=1,#animator.sequencers do
+    if animator.sequencers[i].solo then hasSolo = true break end
   end
 
   for i=1,#animator.sequencers do
     local seq = animator.sequencers[i]
-    seq.divCount = seq.divCount % seq.div + 1
-    if seq.divCount == 1 then
-      seq.index = seq.index % seq.length + 1
+    local state=performance[i]
+    if not state or state.source~=seq then state={source=seq};performance[i]=state end
+    local initial=animator.modulation and animator.modulation:effective(seq,i) or seq
+    if not state.div or (not seq.modEnabled and not state.modulated) then state.div=constants.RATE_TICK_DIVS[initial.rate] end
+    local tickDiv=state.div or constants.RATE_TICK_DIVS[constants.RATE_DEFAULT]
+    seq.rateCount = seq.rateCount % tickDiv + 1
+    if seq.rateCount == 1 then
+      state.effective=animator.modulation and animator.modulation:effective(seq,i) or seq
+      state.div=constants.RATE_TICK_DIVS[state.effective.rate]
+      state.modulated=seq.modEnabled
+      if animator.modulation then animator.modulation.applied[i]=state.effective end
+      local effective=state.effective
+      seq:advance()
       if animator.shouldResetAll then
         seq.index = 1
       end
@@ -198,7 +144,21 @@ function animator.count()
       end
       local currentStep = seq.steps[seq.index]
       local pos = findPos(currentStep.x, currentStep.y)
-      if animator.on[pos] > 0 then
+      local canSound = seq.output ~= 1 and not seq.muted and (not hasSolo or seq.solo)
+      -- Ratchets draw chance at each strike, so a failed first note must not
+      -- discard the whole burst. Intersection retrigger uses the same rule.
+      state.strikeProbability=nil
+      if seq.probabilityEnabled and (seq.ratchetEnabled or seq.rhythm==3) then
+        state.strikeProbability=effective.probability
+      end
+      local passesProbability
+      if state.strikeProbability~=nil then
+        passesProbability=state.strikeProbability>0
+      else
+        passesProbability=not seq.probabilityEnabled or math.random(100)<=effective.probability
+      end
+      if animator.outputs then animator.outputs:stop_track(i) end
+      if animator.on[pos] > 0 and canSound and passesProbability then
         if play[pos] == nil then
           play[pos] = {seq}
         else
@@ -212,45 +172,77 @@ function animator.count()
 
   local maxNotes = params:get('max_notes')
   local noteCount = 0
-  local notesPlayed = {}
-  local channelNotes = {}
+  local originalCrowNotes = {}
 
   for pos,seqs in pairs(play) do
-    local note = animator.notes[pos]
-    local channel = seqs[1].channel
-    local channelNotes = {}
-    channelNotes[channel] = note
-    local mute = false
     local seqNum = #seqs
-    if seqNum > 1 then
-      for i=1,seqNum do
-        local intersect = INTERSECT_OPS[seqs[i].intersect]
-        if intersect == constants.INTERSECT_OP_OCTAVE then
-          note = note + 12
-        elseif intersect == constants.INTERSECT_OP_MUTE then
+    local collision = seqNum > 1
+
+    for i=1,seqNum do
+      local seq = seqs[i]
+      local track
+      for n,candidate in ipairs(animator.sequencers) do if candidate == seq then track = n; break end end
+      local effective=performance[track].effective or seq
+      local notes = {animator.notes[pos] + effective.transpose + (effective.octave or 0)*12}
+      local mute = false
+      local repeats = seq.ratchetEnabled and effective.ratchet or 1
+
+      if collision then
+        if seq.harmonic == 2 then
+          notes[1] = notes[1] + 12
+        elseif seq.harmonic == 3 then
+          notes[1] = notes[1] - 12
+        elseif seq.harmonic == 4 then
+          notes[2] = notes[1] + 7
+        elseif seq.harmonic == 5 or seq.harmonic == 6 then
+          local root = notes[1]
+          local intervals = seq.harmonic == 5
+            and constants.TRIAD_INTERVALS[seq.triadType or 1]
+            or constants.SEVENTH_INTERVALS[seq.seventhType or 1]
+          notes = {}
+          for _,interval in ipairs(intervals) do notes[#notes+1] = root + interval end
+        end
+
+        if seq.rhythm == 2 then
           mute = true
-        elseif intersect == constants.INTERSECT_OP_RESET_SELF then
-          seqs[i].reset = true
-        elseif intersect == constants.INTERSECT_OP_RESET_OTHER then
-          for j=1,seqNum do if j~= i then seqs[j].reset = true end end
-        elseif intersect == constants.INTERSECT_OP_RESET_ALL then
+        elseif seq.rhythm == 3 then
+          repeats = effective.ratchet
+        elseif seq.rhythm == 4 then
+          if seq.direction == constants.DIRECTION_FORWARD then
+            seq.direction = constants.DIRECTION_REVERSE
+            params:set('seq' .. track .. 'direction', seq.direction, true)
+          elseif seq.direction == constants.DIRECTION_REVERSE then
+            seq.direction = constants.DIRECTION_FORWARD
+            params:set('seq' .. track .. 'direction', seq.direction, true)
+          elseif seq.direction == constants.DIRECTION_PENDULUM then
+            seq.directionStep = seq.directionStep * -1
+          end
+        elseif seq.rhythm == 5 then
+          seq.reset = true
+        elseif seq.rhythm == 6 then
+          for j=1,seqNum do if j~=i then seqs[j].reset = true end end
+        elseif seq.rhythm == 7 then
           animator.shouldResetAll = true
         end
-        channelNotes[seqs[i].channel] = note
       end
-    end
 
-    for channel,note in pairs(channelNotes) do
-      if not mute and notesPlayed[note] ~= channel then
-        if slop > 0 then
-          delayNote(note, channel)
-        else
-          playNote(note, channel)
+      if not mute and repeats > 0 and animator.outputs then
+        if seq.output == 11 then
+          local unique = {}
+          for _,note in ipairs(notes) do
+            if originalCrowNotes[note] ~= seq.channel then
+              unique[#unique+1] = note
+              originalCrowNotes[note] = seq.channel
+            end
+          end
+          notes = unique
         end
-        notesPlayed[note] = channel
-        noteCount = noteCount+1
-        if noteCount == maxNotes then
-          return animator.redraw()
+        local available = maxNotes - noteCount
+        while #notes > available do table.remove(notes) end
+        if #notes > 0 then
+          local stepSeconds = clock.get_beat_sec() * constants.RATE_TICK_DIVS[effective.rate]/8
+          animator.outputs:play(track, effective, notes, repeats, stepSeconds, slop,performance[track].strikeProbability)
+          noteCount = noteCount + #notes
         end
       end
     end
@@ -309,6 +301,19 @@ function animator.moveSequencers(axis, delta, wrap)
   animator.setOnToNew(newOn)
 end
 
+function animator.moveSequence(index, axis, delta, wrap)
+  local seq = animator.sequencers[index]
+  if not seq then return end
+  local movedOn = moveSteps(seq.steps, axis, delta, wrap)
+  seq:regenStepMap()
+  local newOn = {}
+  for pos,value in pairs(animator.on) do
+    if value > 0 and animator.enabled[pos] > 0 then newOn[pos] = 1 end
+  end
+  for pos,_ in pairs(movedOn) do newOn[pos] = 1 end
+  animator.setOnToNew(newOn)
+end
+
 function animator.moveSequencersPos(axis, val, wrap)
   local newOn = {}
   for i=1,#animator.sequencers do
@@ -330,43 +335,93 @@ function animator.setOnToNew(newOn)
 end
 
 function animator.handleSelectSnapshot(e)
-  if animator.snapshots[e.i] == nil or e.isClearHeld then
-    animator.snapshots[e.i] = Snapshot.new(animator)
-  end
-
-  setToSnapshot(animator.snapshots[e.i])
-  animator.grid.snapshot = e.i
+  animator.withUpdate(function()
+    if animator.snapshots[e.i] == nil or e.isClearHeld then
+      animator.snapshots[e.i] = Snapshot.new(animator)
+    end
+    setToSnapshot(animator.snapshots[e.i])
+    animator.grid.snapshot = e.i
+  end)
   animator.redraw()
 end
 
-function setToSnapshot(snapshot)
+local function applySnapshot(snapshot)
+  if animator.history then animator.history:clear() end
+  if animator.grid and animator.grid.cancelGestureHolds then animator.grid:cancelGestureHolds() end
+  if animator.modulation then animator.modulation:reset() end
+  performance={}
+  if animator.outputs then animator.outputs:panic() end
+  animator.original = {}
   animator.on = copyTable(snapshot.on)
   animator.enabled = copyTable(snapshot.enabled)
   animator.sequencers = deepcopy(snapshot.sequencers)
 
   for i=1,MAX_SEQ_NUM do
-    params:set('seq' .. i .. 'intersect', snapshot.intersects[i])
-    params:set('seq' .. i .. 'div', snapshot.divs[i])
+    local savedSeq = snapshot.sequencers[i]
+    params:set('seq' .. i .. 'intersect',
+      snapshot.intersects and snapshot.intersects[i] or savedSeq and savedSeq.intersect or 1)
+    local rate = snapshot.rates and snapshot.rates[i]
+      or (snapshot.divs and LEGACY_DIV_TO_RATE[snapshot.divs[i]])
+      or constants.RATE_DEFAULT
+    params:set('seq' .. i .. 'rate', rate)
+    params:set('seq' .. i .. 'harmonic',
+      snapshot.harmonics and snapshot.harmonics[i] or savedSeq and savedSeq.harmonic or 1)
+    params:set('seq' .. i .. 'rhythm',
+      snapshot.rhythms and snapshot.rhythms[i] or savedSeq and savedSeq.rhythm or 1)
+    local captured = snapshot.trackSettings and snapshot.trackSettings[i]
+    if captured then
+      Settings.apply(i, captured, animator.sequencers[i])
+    elseif savedSeq then
+      -- Preserve per-line performance fields in earlier Animator 2 prototypes.
+      Settings.apply(i, Settings.capture(i, savedSeq), animator.sequencers[i])
+    end
+    -- norns only runs parameter actions when the value changes. A newly
+    -- restored sequencer must also be updated when consecutive snapshots
+    -- share a value (including doodles saved by older Animator versions).
+    local seq = animator.sequencers[i]
+    if seq then
+      seq.intersect = params:get('seq' .. i .. 'intersect')
+      seq.rate = params:get('seq' .. i .. 'rate')
+      seq.harmonic = params:get('seq' .. i .. 'harmonic')
+      seq.rhythm = params:get('seq' .. i .. 'rhythm')
+    end
   end
+  Original.alignSnapshot(animator,snapshot)
+end
+
+function setToSnapshot(snapshot)
+  return animator.withUpdate(function() return applySnapshot(snapshot) end)
 end
 
 function animator.clearSeq(index)
-  if animator.sequencers[index] ~= nil then
-    clearStepState(animator.sequencers[index].steps)
-    clearOnState(animator.sequencers[index].steps)
-    local lastIndex = #animator.sequencers
-    table.remove(animator.sequencers, index)
-    resetSeqParams(lastIndex)
-    animator.redraw()
+  if animator.modulation then animator.modulation:reset() end
+  performance={}
+  if not animator.sequencers[index] then return end
+  local saved = {}
+  for i=1,8 do saved[i] = Settings.capture(i, animator.sequencers[i]) end
+  if animator.outputs then animator.outputs:panic() end
+  clearStepState(animator.sequencers[index].steps)
+  clearOnState(animator.sequencers[index].steps)
+  local lastIndex = #animator.sequencers
+  table.remove(animator.sequencers, index)
+  for i=index,#animator.sequencers do
+    Settings.apply(i, saved[i+1], animator.sequencers[i])
+    params:set('seq' .. i .. 'intersect', animator.sequencers[i].intersect, true)
   end
+  resetSeqParams(lastIndex)
+  animator.original = {}
+  animator.redraw()
 end
 
 function resetSeqParams(index)
-  params:set('seq' .. index .. 'div', 1)
+  Settings.apply(index, nil, animator.sequencers[index])
   params:set('seq' .. index .. 'intersect', 1)
 end
 
 function animator.clear(view)
+  if animator.modulation then animator.modulation:reset() end
+  performance={}
+  if animator.outputs then animator.outputs:panic() end
   if view == 1 then
     for i=1,#animator.sequencers do
       resetSeqParams(i)
@@ -387,11 +442,12 @@ end
 function animator.reset(view)
   if view == 1 then
     for i=1,#animator.sequencers do
-      animator.sequencers[i].divCount = 1
+      animator.sequencers[i].rateCount = 1
       animator.sequencers[i].index = 1
     end
   else
-    animator.sequencers[animator.grid.selected].reset = true
+    local seq = animator.sequencers[animator.grid.selected]
+    if seq then seq.reset = true end
   end
 end
 
@@ -405,8 +461,17 @@ end
 
 function animator.save(txt)
   if txt then
+    if txt:match('^%s*$') or txt:find('[/\\%z]') or txt == '.' or txt == '..' then
+      animator.saveStatus = {ok=false, text='invalid doodle name'}
+      print('Animator save failed: invalid doodle name')
+      animator.redraw()
+      return false, 'invalid doodle name'
+    end
     local path = norns.state.data .. txt
     local doodle = {
+      formatVersion = 4,
+      originalPlayback = animator.originalPlayback,
+      trackSettings = {},
       name = txt,
       on = animator.on,
       enabled = animator.enabled,
@@ -414,21 +479,50 @@ function animator.save(txt)
       snapshots = animator.snapshots,
       selectedSnapshot = animator.grid.snapshot,
       showIntroText = animator.showIntroText,
-      patterns = animator.grid.patternManager.patterns
+      patterns = animator.grid.patternManager.exportPatterns
+        and animator.grid.patternManager:exportPatterns() or {}
     }
-    tab.save(doodle, path .. '.doodle')
-    params:write(path .. '.pset')
-    animator.name = doodle.name
+    for i=1,8 do doodle.trackSettings[i] = Settings.capture(i, animator.sequencers[i]) end
+    local ok,err = Persistence.save(doodle,path)
+    animator.saveStatus = {ok=ok, text=ok and 'doodle saved' or 'SAVE FAILED', detail=err}
+    if ok then animator.name = doodle.name else print('Animator save failed: ' .. tostring(err)) end
+    animator.redraw()
+    return ok,err
   else
     print('save canceled')
   end
 end
 
-function animator.load(path)
+local function legacySettings(path)
+  local settings = {}
+  local file = io.open(path, 'r')
+  if not file then return settings end
+  for line in file:lines() do
+    local id,value = line:match('^"([%w_]+)"%s*:%s*([%+%-]?[%d%.eE%+%-]+)')
+    if id then settings[id] = tonumber(value) end
+  end
+  file:close()
+  return settings
+end
+
+local function loadDoodle(path)
   if string.find(path, 'doodle') ~= nil then
     local doodle = tab.load(path)
     if doodle ~= nil then
-      params:read(norns.state.data .. doodle.name ..'.pset')
+      if animator.history then animator.history:clear() end
+      if animator.grid and animator.grid.cancelGestureHolds then animator.grid:cancelGestureHolds() end
+      if animator.modulation then animator.modulation:reset() end
+      performance={}
+      if animator.outputs then animator.outputs:panic() end
+      animator.original = {}
+      local psetPath = path:gsub('%.doodle$', '.pset')
+      local legacy = not doodle.trackSettings and legacySettings(psetPath) or {}
+      if Original.isOriginal(doodle) then doodle=Original.convert(doodle,legacy) end
+      animator.originalPlayback=doodle.originalPlayback and deepcopy(doodle.originalPlayback) or nil
+      params:read(psetPath)
+      if params.lookup.animator_playback then
+        params:set('animator_playback',animator.originalPlayback and animator.originalPlayback.enabled and 2 or 1)
+      end
 
       animator.name = doodle.name
       animator.showIntroText = doodle.showIntroText
@@ -437,17 +531,50 @@ function animator.load(path)
 
       animator.sequencers = {}
       for i=1,#doodle.sequencers do
-        local seq = doodle.sequencers[i]
+        local seq = deepcopy(doodle.sequencers[i])
+        seq.triadType = seq.triadType or 1
+        seq.seventhType = seq.seventhType or 1
+        if not doodle.trackSettings then
+          -- Pre-format-3 Animator 2 prototypes used this output order.
+          -- Genuine original Animator files are converted above.
+          local routes = {2,10,4,7,11,11,2,8}
+          seq.output = seq.output or routes[legacy.output] or params:get('seq' .. i .. 'output')
+          seq.port = seq.port or legacy.midi_out_device
+          if legacy.output then seq.channel = legacy['seq'..i..'channel'] or seq.channel end
+          seq.probability = seq.probability or legacy.line_probability
+          seq.ratchet = seq.ratchet or legacy.line_ratchet
+        end
         animator.sequencers[i] = Sequencer.new(seq, i)
+        params:set('seq' .. i .. 'rate', animator.sequencers[i].rate)
+        params:set('seq' .. i .. 'intersect', animator.sequencers[i].intersect)
+        params:set('seq' .. i .. 'harmonic', animator.sequencers[i].harmonic)
+        params:set('seq' .. i .. 'rhythm', animator.sequencers[i].rhythm)
+        Settings.apply(i, doodle.trackSettings and doodle.trackSettings[i]
+          or Settings.capture(i, animator.sequencers[i]), animator.sequencers[i])
       end
 
+      if doodle.trackSettings then
+        for i=#doodle.sequencers+1,8 do Settings.apply(i, doodle.trackSettings[i]) end
+      end
       animator.snapshots = {}
-      for i=1,#doodle.snapshots do
-        local snap = doodle.snapshots[i]
-        newSnap = copyTable(snap)
+      -- Snapshot slots can contain gaps; # is not a count for sparse tables.
+      for i,snap in pairs(doodle.snapshots) do
+        local newSnap = deepcopy(snap)
 
         for j=1,#snap.sequencers do
-          local seq = snap.sequencers[j]
+          local seq = newSnap.sequencers[j]
+          seq.triadType = seq.triadType or 1
+          seq.seventhType = seq.seventhType or 1
+          -- These arrays are the settings captured by the snapshot, even if
+          -- an older loader has replaced the sequencer's cached values.
+          if snap.rates then
+            seq.rate = snap.rates[j]
+          elseif snap.divs then
+            seq.rate = LEGACY_DIV_TO_RATE[snap.divs[j]]
+          end
+          if snap.harmonics then seq.harmonic = snap.harmonics[j] end
+          if snap.rhythms then seq.rhythm = snap.rhythms[j] end
+          seq.intersect = snap.intersects and snap.intersects[j] or seq.intersect
           newSnap.sequencers[j] = Sequencer.new(seq, j)
         end
         animator.snapshots[i] = newSnap
@@ -456,10 +583,19 @@ function animator.load(path)
       animator.grid.snapshot = doodle.selectedSnapshot
 
       animator.grid.patternManager:rebuildPatterns(doodle.patterns)
+      return true
     else
       print('you have no doodles')
     end
   end
+  return false
+end
+
+function animator.load(path)
+  if animator.closing or type(path)~='string' then return false end
+  local loaded=animator.withUpdate(function() return loadDoodle(path) end)
+  if loaded then animator.redraw() end
+  return loaded
 end
 
 function reduceStepLevels(seq, levels)
@@ -519,6 +655,40 @@ function clearOnState(steps)
       animator.on[pos] = animator.enabled[pos]
     end
   end
+end
+
+function animator.initHistory()
+  local History=include('anima/lib/history')
+  local function capture()
+    local state={lines={},on=deepcopy(animator.on),enabled=deepcopy(animator.enabled),
+      settings={},intro=animator.showIntroText,lastReplaced=animator.lastReplaced,
+      snapshot=animator.grid.snapshot,selected=animator.grid.selected}
+    state.storedSnapshot=animator.snapshots[state.snapshot]
+    for i=1,8 do state.settings[i]=Settings.capture(i,animator.sequencers[i]) end
+    for i,seq in ipairs(animator.sequencers) do
+      state.lines[i]={id=seq.editId,steps=deepcopy(seq.steps)}
+    end
+    return state
+  end
+  local function restore(state)
+    if animator.outputs then animator.outputs:panic() end
+    local current={}
+    for i,seq in ipairs(animator.sequencers) do current[seq.editId]=Settings.capture(i,seq) end
+    animator.sequencers={}
+    for i,line in ipairs(state.lines) do
+      local settings=current[line.id] or state.settings[i]
+      Settings.apply(i,settings)
+      animator.sequencers[i]=Sequencer.new({steps=deepcopy(line.steps),editId=line.id},i)
+    end
+    for i=#state.lines+1,8 do Settings.apply(i,state.settings[i]) end
+    animator.on=deepcopy(state.on);animator.enabled=deepcopy(state.enabled)
+    animator.showIntroText=state.intro;animator.lastReplaced=state.lastReplaced
+    animator.grid.snapshot=state.snapshot;animator.grid.selected=state.selected
+    animator.snapshots[state.snapshot]=state.storedSnapshot
+    animator.original={};performance={}
+    if animator.modulation then animator.modulation:reset() end
+  end
+  animator.history=History.new(capture,restore,util.time)
 end
 
 return animator

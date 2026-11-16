@@ -1,7 +1,7 @@
-local constants = include('animator/lib/constants')
+local constants = include('anima/lib/constants')
 local EVENT_PATTERN = constants.EVENT_PATTERN
 local pattern_time = require 'pattern_time'
-local PATTERN_NUM = 4
+local PATTERN_NUM = 2
 
 local PatternManager = {}
 PatternManager.__index = PatternManager
@@ -25,15 +25,49 @@ function PatternManager.new(options)
   return controller
 end
 
-function PatternManager:rebuildPatterns(patterns)
-  for i=1,PATTERN_NUM do
-    if patterns[i].count > 0 then
-      self.patterns[i].count = patterns[i].count
-      self.patterns[i].event = patterns[i].event
-      self.patterns[i].time = patterns[i].time
-      self.patterns[i].prev_time = patterns[i].prev_time
-      self.patterns[i].step = patterns[i].step
+function PatternManager:exportPatterns()
+  local saved = {}
+  for i,pattern in ipairs(self.patterns) do
+    local times = {}
+    for step,value in ipairs(pattern.time) do times[step] = value end
+    if pattern.rec == 1 and pattern.count > 0 then
+      times[pattern.count] = math.max(0.001,util.time()-pattern.prev_time)
     end
+    saved[i] = {count=pattern.count, event=pattern.event, time=times,
+      prev_time=pattern.prev_time, step=pattern.step, time_factor=pattern.time_factor}
+  end
+  for i,value in pairs(self.legacyPatterns or {}) do saved[i]=value end
+  return saved
+end
+
+function PatternManager:rebuildPatterns(patterns)
+  self.quantizeEvents = {}
+  self.legacyPatterns={}
+  for i=3,4 do if patterns and patterns[i] then self.legacyPatterns[i]=patterns[i] end end
+  for i=1,PATTERN_NUM do
+    local pattern = self.patterns[i]
+    pattern:clear()
+    local saved = patterns and patterns[i]
+    if saved and saved.count and saved.count > 0 then
+      pattern.count = saved.count
+      pattern.event = saved.event
+      pattern.time = saved.time
+      pattern.prev_time = saved.prev_time or 0
+      pattern.step = saved.step or 0
+      pattern.time_factor = saved.time_factor or 1
+    end
+  end
+end
+
+function PatternManager:cleanup()
+  self.quantizeEvents = {}
+  for _,pattern in ipairs(self.patterns) do
+    pattern.process = function() end
+    if pattern.metro then
+      pattern.metro:stop()
+      metro.free(pattern.metro.id)
+    end
+    pattern.rec,pattern.play,pattern.overdub = 0,0,0
   end
 end
 

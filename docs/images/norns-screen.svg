@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1320" height="728" viewBox="0 0 1320 728" role="img" aria-labelledby="title desc">
+  <title id="title">Anima screens on the norns OLED</title>
+  <desc id="desc">Representative pixel-layout schematics of the Canvas, Lines, Intersections, page-selection, and single-track preview screens, based on the text and coordinates drawn by Anima.</desc>
+  <defs>
+    <style>
+      .bg{fill:#f5f4f0}.panel{fill:#fff;stroke:#d1d0ca;stroke-width:2}.label{font:600 17px system-ui,sans-serif;fill:#343632}.note{font:13px system-ui,sans-serif;fill:#74756e}
+      .oled{fill:#101110;stroke:#9a9a94;stroke-width:2}.pix{font-family:monospace;font-weight:400;fill:#f1f1e8;letter-spacing:0}.dim{fill:#77786f}.step{fill:#eee}.outline{fill:none;stroke:#eee;stroke-width:2}.rule{stroke:#eee;stroke-width:2}
+    </style>
+  </defs>
+  <rect class="bg" width="1320" height="728"/>
+  <g transform="translate(30 34)">
+    <rect class="panel" width="610" height="300" rx="12"/>
+    <text class="label" x="24" y="32">CANVAS</text><text class="note" x="116" y="32">representative drawing and footer</text>
+    <g transform="translate(94 52) scale(3.2)">
+      <rect class="oled" width="128" height="64"/>
+      <text class="pix" x="4" y="7" font-size="3.1" fill="#77786f">anima / CANVAS</text>
+      <rect class="step" x="27" y="11" width="3" height="3"/><rect class="step" x="32" y="11" width="3" height="3"/>
+      <rect class="step" x="37" y="16" width="3" height="3"/><rect class="step" x="42" y="16" width="3" height="3"/>
+      <rect class="step" x="47" y="21" width="3" height="3"/><rect class="step" x="52" y="21" width="3" height="3"/>
+      <rect class="step" x="57" y="26" width="3" height="3"/><rect class="step" x="62" y="26" width="3" height="3"/>
+      <rect class="step" x="67" y="31" width="3" height="3"/><rect class="step" x="72" y="31" width="3" height="3"/>
+      <text class="pix dim" x="4" y="60" font-size="3.1">K2 reset   K3 clear</text>
+    </g>
+    <text class="note" x="24" y="286">Drawing cells are 3×3 px; title and footer use the script's exact text.</text>
+  </g>
+  <g transform="translate(680 34)">
+    <rect class="panel" width="610" height="300" rx="12"/>
+    <text class="label" x="24" y="32">LINES</text><text class="note" x="81" y="32">example values, source labels and line order from ui.lua</text>
+    <g transform="translate(94 52) scale(3.2)">
+      <rect class="oled" width="128" height="64"/>
+      <text class="pix" x="4" y="9" font-size="3.1">LINES  1</text>
+      <text class="pix" x="4" y="21" font-size="3.1">forward x1 MUTE</text>
+      <text class="pix" x="4" y="32" font-size="3.1">n.b.: fluid 1</text>
+      <text class="pix" x="4" y="43" font-size="3.1">prob 75% LFO</text>
+      <text class="pix" x="4" y="54" font-size="3.1">ratchet 2 HOLD</text>
+      <text class="pix dim" x="4" y="63" font-size="3.1">O+1 T-12 L120 V96</text>
+    </g>
+    <text class="note" x="24" y="286">Example content only; values and output name depend on the selected track.</text>
+  </g>
+  <g transform="translate(30 374)">
+    <rect class="panel" width="610" height="300" rx="12"/>
+    <text class="label" x="24" y="32">INTERSECTIONS</text><text class="note" x="177" y="32">selected track's actions and effective values</text>
+    <g transform="translate(94 52) scale(3.2)">
+      <rect class="oled" width="128" height="64"/>
+      <text class="pix" x="4" y="9" font-size="3.1">INTERSECTIONS  1</text>
+      <text class="pix" x="4" y="24" font-size="3.1">triad: minor</text>
+      <text class="pix" x="4" y="37" font-size="3.1">retrigger</text>
+      <text class="pix" x="4" y="49" font-size="3.1">LFO HOLD 2/3</text>
+      <text class="pix dim" x="4" y="63" font-size="3.1">x1  P75%  R2</text>
+    </g>
+    <text class="note" x="24" y="286">Chord text changes with its type; Poff/Roff appear when those controls are off.</text>
+  </g>
+  <g transform="translate(680 374)">
+    <rect class="panel" width="610" height="300" rx="12"/>
+    <text class="label" x="24" y="32">PAGE SELECT / TRACK PREVIEW</text><text class="note" x="292" y="32">two temporary screen states</text>
+    <g transform="translate(24 70) scale(2.1)">
+      <rect class="oled" width="128" height="64"/>
+      <text class="pix" x="4" y="12" font-size="3.1">SELECT PAGE</text>
+      <text class="pix" x="4" y="28" font-size="3.1">13 canvas   14 lines</text>
+      <text class="pix" x="4" y="40" font-size="3.1">15 intersections</text>
+      <text class="pix dim" x="4" y="58" font-size="3.1">hold corner + press page</text>
+    </g>
+    <g transform="translate(318 70) scale(2.1)">
+      <rect class="oled" width="128" height="64"/>
+      <text class="pix dim" x="4" y="7" font-size="3.1">TRACK 1</text>
+      <rect class="step" x="27" y="11" width="3" height="3"/><rect class="step" x="32" y="11" width="3" height="3"/>
+      <rect class="step" x="37" y="11" width="3" height="3"/><rect class="step" x="42" y="16" width="3" height="3"/>
+      <rect class="step" x="47" y="16" width="3" height="3"/><rect class="step" x="52" y="21" width="3" height="3"/>
+      <text class="pix dim" x="4" y="60" font-size="3.1">release 15: parameters</text>
+    </g>
+    <text class="note" x="24" y="264">Preview follows playback. These are schematic OLED renderings, not device screenshots.</text>
+    <text class="note" x="24" y="284">Coordinate positions and literal labels follow the current script UI.</text>
+  </g>
+</svg>

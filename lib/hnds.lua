@@ -19,6 +19,7 @@ local options = {
 }
 
 local lfo = {}
+local lfo_metro
 for i = 1, number_of_outputs do
   lfo[i] = {
     freq = 0.0001,
@@ -96,10 +97,16 @@ function lfo.init()
     params:add_separator()
   end
 
-  local lfo_metro = metro.init()
+  lfo_metro = metro.init()
+  local ownerParams = params
   lfo_metro.time = .01
   lfo_metro.count = -1
   lfo_metro.event = function()
+    if params ~= ownerParams or not ownerParams.lookup['1lfo']
+        or norns.state.shortname ~= 'anima' then
+      lfo_metro:stop()
+      return
+    end
     for i = 1, number_of_outputs do
       if params:get(i .. "lfo") == 2 then
         local slope
@@ -120,5 +127,13 @@ function lfo.init()
   lfo_metro:start()
 end
 
+
+function lfo.cleanup()
+  if lfo_metro then
+    lfo_metro:stop()
+    metro.free(lfo_metro.id)
+    lfo_metro = nil
+  end
+end
 
 return lfo

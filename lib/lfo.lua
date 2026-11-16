@@ -1,5 +1,5 @@
-local constants = include('lib/constants')
-local hnds = include('lib/hnds')
+local constants = include('anima/lib/constants')
+local hnds = include('anima/lib/hnds')
 local LFO_NUM = constants.LFO_NUM
 local lfo = {}
 
@@ -55,5 +55,7 @@ function lfo.init(animator)
   hnds.process = createProcess(createLfoHandlers(animator))
   hnds.init()
 end
+
+function lfo.cleanup() hnds.cleanup() end
 
 return lfo

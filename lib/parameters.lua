@@ -1,10 +1,9 @@
 local fileselect = require 'fileselect'
 local textentry = require 'textentry'
-local constants = include('animator/lib/constants')
-local INTERSECT_OPS = constants.INTERSECT_OPS
+local constants = include('anima/lib/constants')
 local MollyThePoly = require "molly_the_poly/lib/molly_the_poly_engine"
 local MusicUtil = require "musicutil"
-local lfo = include('animator/lib/lfo')
+local lfo = include('anima/lib/lfo')
 
 local parameters = {}
 
@@ -38,57 +37,42 @@ function getScaleNames()
   return names
 end
 
-function addSeqParams(animator)
-  local internal = 'internal'
-  params:add_group(internal, 16)
-  params:hide(internal)
-  for i=1,8 do
-    params:add_option('seq' .. i .. 'intersect', 'seq ' .. i .. ' intersect', INTERSECT_OPS, 1)
-    params:set_action('seq' .. i .. 'intersect', function(v)
-      if animator.sequencers[i] then
-        animator.sequencers[i].intersect = v
-      end
-    end)
-
-    params:add_number('seq' .. i .. 'div', 'seq ' .. i .. ' clock div', 1, 8, 1)
-    params:set_action('seq' .. i .. 'div', function(v)
-      if animator.sequencers[i] then
-        animator.sequencers[i].div = v
-      end
-    end)
-  end
+local Settings = include('anima/lib/track_settings')
+function addSeqParams(animator, nb, deferLfoSection)
+  Settings.add(animator, nb, deferLfoSection)
 end
 
 function parameters.init(animator)
   params:add_separator('ANIMATOR')
-  params:add_group('SAVE/LOAD', 2)
+  params:add_group('SAVE/LOAD', 4)
   params:add_trigger('save', 'save doodle')
   params:set_action('save', function(x) textentry.enter(animator.save, animator.name) end)
   params:add_trigger('load', 'load doodle')
   params:set_action('load', function() fileselect.enter(norns.state.data, animator.load) end)
 
-  params:add_group('SETTINGS', 8)
-  params:add_option('output', 'output', constants.OUTPUTS, 1)
-  params:set_action('output', function(v)
-    local output = constants.OUTPUTS[v]
-    local triggerASL = 'pulse()'
-
-    if output == constants.OUTPUT_AUDIO or output == constants.OUTPUT_AUDIO_MIDI or output == constants.OUTPUT_MIDI then
-      crow.ii.jf.mode(0)
-    elseif output == constants.OUTPUT_CROW_CV then
-      crow.ii.jf.mode(0)
-      crow.output[2].action = triggerASL
-      crow.output[4].action = triggerASL
-    elseif output == constants.OUTPUT_CROW_II_JF then
-      crow.ii.jf.mode(1)
-    elseif output == constants.OUTPUT_CROW_CV_JF or output == constants.OUTPUT_AUDIO_CV_JF then
-      crow.ii.jf.mode(1)
-      crow.output[2].action = triggerASL
-      crow.output[4].action = triggerASL
-    end
+  params:add_trigger('import_animator2','load Animator 2 doodle')
+  params:set_action('import_animator2',function()
+    local folder=(_path and _path.data and _path.data..'animator2/')
+      or norns.state.data:gsub('anima/$','animator2/')
+    fileselect.enter(folder,animator.load)
   end)
-  params:add_number('ER_port', 'ER-301 port', 1, 90, 1) -- sets 301 port bias
 
+  params:add_trigger('import_animator','load Animator original')
+  params:set_action('import_animator',function()
+    local folder=(_path and _path.data and _path.data..'animator/')
+      or norns.state.data:gsub('anima/$','animator/')
+    fileselect.enter(folder,animator.load)
+  end)
+
+  params:add_group('COMPOSITION', 8)
+  params:add_option('animator_playback','playback',{'anima','Animator original'},1)
+  params:set_action('animator_playback',function(v)
+    animator.originalPlayback=animator.originalPlayback or {
+      minVelocity=1,maxVelocity=127,minDurationCs=10,maxDurationCs=10}
+    animator.originalPlayback.enabled=v==2
+    if animator.outputs then animator.outputs:panic() end
+    if animator.modulation then animator.modulation:reset() end
+  end)
   params:add_option('scale', 'scale', getScaleNames(), 1)
   params:set_action('scale', function(scale)
     animator.notes = mapGridNotes(scale, params:get('global_transpose'))
@@ -101,36 +85,11 @@ function parameters.init(animator)
   params:add_number('quant_div', 'quantization div', 1, 8, 1)
   params:add_number('slop', 'slop', 0, 500, 0)
   params:add_number('max_notes', 'max notes', 1, 10, 6)
+  params:add_trigger('panic', 'all notes off')
+  params:set_action('panic', function() if animator.outputs then animator.outputs:panic() end end)
 
-  params:add_group('MIDI', 13)
-  params:add_number('midi_out_device', 'midi out device', 1, 4, 1)
-  params:set_action('midi_out_device', function(v) animator.midiOut = midi.connect(v) end)
-  local noteLengthControlspec = controlspec.new(0.01, 1, 'lin', 0.01, 0.01, "")
-  params:add_control('min_note_length', 'min note length', noteLengthControlspec)
-  params:add_control('max_note_length', 'max note length', noteLengthControlspec)
-  params:set_action('min_note_length', function(v)
-    if v > params:get('max_note_length') then
-      params:set('max_note_length', v)
-    end
-  end)
-  params:add_number('max_velocity', 'max velocity', 1, 127, 127)
-  params:add_number('min_velocity', 'min velocity', 1, 127, 1)
-  params:set_action('min_velocity', function(v)
-    if v > params:get('max_velocity') then
-      params:set('max_velocity', v)
-    end
-  end)
-  for i=1,8 do
-    params:add_number('seq' .. i .. 'channel', 'seq ' .. i .. ' midi ch', 1, 16, 1)
-    params:set_action('seq' .. i .. 'channel', function(v)
-      if animator.sequencers[i] then
-        animator.sequencers[i].channel = v
-      end
-    end)
-  end
-
-  params:add_group('LFO', 14)
-  lfo.init(animator)
+  addSeqParams(animator, animator.nb, true)
+  Settings.addLfoSection(animator,function() lfo.init(animator) end)
 
   local hasMoveTarget = {[2] = true, [3] = true}
 
@@ -151,7 +110,7 @@ function parameters.init(animator)
     )
   end
 
-  params:add_group('SYNTH', 47)
+  params:add_group('SYNTH', 'INTERNAL SYNTH (shared)', 47)
 
   MollyThePoly.add_params()
   params:set('env_2_decay', 0.2)
@@ -161,9 +120,16 @@ function parameters.init(animator)
   params:set('noise_level', 0)
   params:set('chorus_mix', 0)
 
+  animator.notes = mapGridNotes(params:get('scale'), params:get('global_transpose'))
+
   params:add_separator()
 
-  addSeqParams(animator)
+  if animator.nb then
+    params:add_separator('nb_sound', 'N.B. SOUND')
+    animator.nb:add_player_params()
+  end
 end
+
+function parameters.cleanup() lfo.cleanup() end
 
 return parameters

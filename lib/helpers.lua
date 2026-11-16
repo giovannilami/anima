@@ -1,4 +1,4 @@
-local constants = include('animator/lib/constants')
+local constants = include('anima/lib/constants')
 local L = constants.CANVAS_LENGTH
 local helpers = {}
 
