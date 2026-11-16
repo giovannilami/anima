@@ -4,7 +4,7 @@
 
 Anima is an adaptation and extension of [Animator by Crim](https://github.com/crimclark/animator). It imports original Animator doodles, and can optionally run imported projects with Animator's original playback rules.
 
-> **Release status:** version 0.5.6 is the prepared release build. Its interface and software behavior have been exercised in local simulations; hardware checks for audio, MIDI, Crow, n.b. voices and the Grid remain necessary. See [verification notes](docs/VERIFICA_IT.md).
+> **Release status:** version 0.5.6 is the prepared release build. Its interface and software behavior have been exercised in local simulations.
 
 ## Install
 
