@@ -44,18 +44,11 @@ end
 
 function parameters.init(animator)
   params:add_separator('ANIMATOR')
-  params:add_group('SAVE/LOAD', 4)
+  params:add_group('SAVE/LOAD', 3)
   params:add_trigger('save', 'save doodle')
   params:set_action('save', function(x) textentry.enter(animator.save, animator.name) end)
   params:add_trigger('load', 'load doodle')
   params:set_action('load', function() fileselect.enter(norns.state.data, animator.load) end)
-
-  params:add_trigger('import_animator2','load Animator 2 doodle')
-  params:set_action('import_animator2',function()
-    local folder=(_path and _path.data and _path.data..'animator2/')
-      or norns.state.data:gsub('anima/$','animator2/')
-    fileselect.enter(folder,animator.load)
-  end)
 
   params:add_trigger('import_animator','load Animator original')
   params:set_action('import_animator',function()

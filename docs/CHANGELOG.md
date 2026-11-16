@@ -1,5 +1,11 @@
 # Changelog
 
+## Publication preparation
+
+- Replace the composite screen guide with five separate 2:1 illustrations and expand each page's explanation in English and Italian.
+- Keep save, load and original Animator import in SAVE/LOAD; remove the private development importer.
+- Add an explicit statement of AI-assisted development and preserve original-author credits.
+
 ## 0.5.6
 
 - Batch Grid and screen updates during doodle load and snapshot recall; send one complete frame when the operation finishes.
@@ -34,4 +40,4 @@
 
 - Add two independent LFOs per track, each with up to two destinations.
 - Add parameter freeze gestures and session undo/redo for manual Grid and encoder edits.
-- Add format migration from Animator 2 and preserve the three-page Grid workflow.
+- Add legacy format migration and preserve the three-page Grid workflow.

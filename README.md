@@ -1,38 +1,127 @@
 # Anima
 
-**Anima** is an eight-track, two-dimensional sequencer for monome norns and a 16×8 Grid. Draw lines on the Grid; their active steps generate notes as they move and intersect. Each track can use its own clock division, direction, articulation, modulation and output route.
+**Anima** is an eight-track, two-dimensional sequencer for monome norns and a 16×8 Grid. Draw lines on the Grid; their active steps generate notes as their playheads advance and meet. Each track can use its own clock division, direction, articulation, modulation and output route.
 
-Anima is an adaptation and extension of [Animator by Crim](https://github.com/crimclark/animator). It imports Animator and Animator 2 doodles, and can optionally run imported projects with Animator's original playback rules.
+Anima is an adaptation and extension of [Animator by Crim](https://github.com/crimclark/animator). It imports original Animator doodles, and can optionally run imported projects with Animator's original playback rules.
 
 > **Release status:** version 0.5.6 is the prepared release build. Its interface and software behavior have been exercised in local simulations; hardware checks for audio, MIDI, Crow, n.b. voices and the Grid remain necessary. See [verification notes](docs/VERIFICA_IT.md).
 
-## Screen guide
-
-These diagrams are approximate interface schematics based on `lib/ui.lua`, not pixel-accurate screenshots. The line drawing, selected track and live values change during use.
-
-![Anima's Canvas, Lines, Intersections, and page-selection screens as rendered on the norns OLED](docs/images/norns-screen.svg)
-
 ## Install
 
-Copy the `anima` folder into `dust/code/` using [Maiden](https://monome.org/docs/norns/maiden/), then select `anima` from the norns **SELECT** menu. To install from the Maiden REPL after this repository is public:
+You need **norns**, a **16×8 Grid** and **Molly the Poly**. MIDI, Crow and n.b. are optional output destinations.
 
-```text
-;install https://github.com/giovannilami/anima
-```
+1. If Molly the Poly is not already installed, enter this in the [Maiden](https://monome.org/docs/norns/maiden/) REPL:
 
-Anima requires the `MollyThePoly` engine and its supporting library. If Molly the Poly is not already installed, enter the following in the Maiden REPL and restart norns before running Anima:
+   ```text
+   ;install https://github.com/markwheeler/molly_the_poly
+   ```
 
-```text
-;install https://github.com/markwheeler/molly_the_poly
-```
+2. Restart norns to load the engine, then install Anima:
 
-A Grid is required for drawing and performance controls. MIDI, Crow, Just Friends, ER-301 and n.b. destinations are optional. n.b. voice choices come from the n.b. libraries and voice mods installed on the device; Anima does not bundle those third-party voices.
+   ```text
+   ;install https://github.com/giovannilami/anima
+   ```
 
-Anima stores its projects in `dust/data/anima/`. In **PARAMETERS → EDIT → SAVE/LOAD**, use `load Animator 2 doodle` or `load Animator original` to import a project and its adjacent `.pset`. The source project is left in its original data folder; saving from Anima writes a new copy.
+3. Connect Grid and select **anima** in the norns **SELECT** menu. Draw a line using the two-endpoint gesture described below. Set the scale and sound in **PARAMETERS → EDIT**; configure each track's output under **TRACK**.
 
-## Grid pages
+Anima requires both the `MollyThePoly` engine and its Lua library. For a manual installation, copy `anima.lua` and the complete `lib/` folder into `dust/code/anima/`. The documentation and local tests are not required on norns. Installed n.b. libraries and voice mods determine which n.b. voices are available; Anima does not bundle them.
 
-Hold the bottom-right pad **(16,8)**, press a page selector, then release:
+## Three performance pages
+
+**Canvas** is for drawing and arranging the sequences. **Lines** controls how each track plays. **Intersections** chooses what happens when playheads meet. The Grid layout and the norns readout change together when you switch page.
+
+The images below are enlarged **2:1 screen schematics**, matching the proportions of the 128×64 norns display. Their text and row positions follow the script's screen code; values are examples. Canvas cells are enlarged for clarity, with diagonally adjacent steps touching at their corners. The device uses smaller, spaced squares and its own font.
+
+### Canvas: draw the sequences
+
+![Canvas screen: horizontal, vertical and 45-degree diagonal sequences crossing at three distinct cells](docs/images/canvas.svg)
+
+Each line is a track, with its own playhead travelling through its steps. Up to **eight tracks** share a **16-column × 7-row** drawing area. The bottom Grid row contains performance controls. A cell's pitch comes from the composition's scale and global transpose settings. Changing a line's position changes the cells it visits and the pitches it plays.
+
+To draw, hold one Grid pad, press a second pad for the other endpoint, then release. Endpoints must share a row, a column, or form a **45-degree diagonal**: the horizontal and vertical distances must be equal. A diagonal advances by exactly one column and one row at each step. Other slopes do not create a sequence.
+
+The illustration contains three tracks: a horizontal line, a vertical line and a diagonal crossing both. These are three distinct crossing cells. A drawn crossing is a possible meeting point; the intersection actions occur when sounding playheads meet there on the same pulse, depending on their timing and settings.
+
+Tap a cell on an existing line to enable or disable that step. A cell shared by several lines has a shared step-on state. Bright points show current enabled steps; other enabled cells are dimmer, and disabled cells remain faint. Hold a line's two endpoints to delete that line.
+
+| norns control | On Canvas |
+| --- | --- |
+| E2 | Move all lines vertically |
+| E3 | Move all lines horizontally |
+| K2 | Reset playback positions |
+| K3 | Clear the Canvas |
+
+| Bottom Grid row | Action |
+| --- | --- |
+| 1–8 | Recall snapshots |
+| Hold 15 + press 1–8 | Overwrite a snapshot |
+| 10–11 | Snapshot sequence record/play controls |
+| 13 | Undo a manual edit |
+| Hold 15 + press 13 | Redo |
+| 15 | ALT modifier |
+| Hold 16 | Open page selection |
+| 9, 12, 14 | Unassigned |
+
+The footer normally reads `K2 reset   K3 clear`. Save feedback temporarily replaces it. Undo/redo covers manual drawing, deletion, step toggles, clear and encoder moves during the current session.
+
+### Lines: control each track
+
+![Lines screen: selected track, direction, rate, output, probability, ratchet and mapped values](docs/images/lines.svg)
+
+Each Grid row represents one track. Select a track with **E1**, or use that track's controls on Grid. The norns screen reports the selected track; **E2** moves that track vertically and **E3** moves it horizontally.
+
+| Grid column | Action on that row's track |
+| --- | --- |
+| 1 | Tap to mute; hold for solo |
+| 2–5 | Forward, reverse, pendulum, random |
+| 6 | Tap to enable ratchet; hold to freeze/release its modulated value |
+| 7 | Tap to enable probability; hold to freeze/release its modulated value |
+| 8 | Unassigned separator |
+| 9–15 | Rate: ×2, ×1, ÷2, ÷3, ÷4, ÷6, ÷8 |
+
+Set probability percentage, ratchet count, output and other track values in **PARAMETERS → EDIT → TRACK**. A long press on ratchet or probability performs the hold gesture without also toggling the control. Frozen controls blink on Grid.
+
+Read the example screen from top to bottom:
+
+| Screen row | Meaning in the example |
+| --- | --- |
+| `LINES  1` | Track 1 is selected. `ORIG` is appended when original Animator playback is active. |
+| `forward x1` | Forward playback at the base rate. `MUTE` and `SOLO` appear here when active. |
+| `n.b.: fluid 1` | Output route and, for n.b., the assigned voice. Long names are shortened to fit. |
+| `prob 75% LFO` | Probability is enabled and its current value comes from an LFO. |
+| `ratchet 2 HOLD` | Ratchet is enabled with two strikes; its modulated value is frozen. |
+| `O+1 T-12 L120 V96` | Other assigned modulation targets: octave, semitone transpose, note length in milliseconds and velocity. |
+
+`BASE` means the manual value, `LFO` a moving modulated value, and `HOLD` a frozen value. The bottom row only lists assigned destinations; `*` marks a frozen one. An `off` suffix means probability or ratchet is disabled. `INT` on the ratchet row indicates that the count is used for intersection retrigger instead of continuous ratchet.
+
+### Intersections: change what a meeting does
+
+![Intersections screen: minor triad, retrigger, held LFO targets and effective performance values](docs/images/intersections.svg)
+
+Choose one harmonic action and one rhythmic action for each track. These act when multiple eligible playheads reach the same enabled cell on the same pulse. Different rates, directions, rests and probability settings change when those meetings occur. A visible crossing alone does not continuously apply an action.
+
+Each Grid row still represents a track. Press its desired action to select it; press that same pad again to return that action group to `none`. Harmonic and rhythmic actions can be combined.
+
+| Grid column | Action |
+| --- | --- |
+| 1–5 | Octave up, octave down, fifth, triad, seventh |
+| 6 | Unassigned separator |
+| 7–12 | Mute, retrigger, reverse, reset self, reset others, reset all |
+| 13 | Unassigned |
+| 14 | Tap to switch the track's LFO master on/off; hold to freeze/release all assigned destinations |
+| 15 | Hold to preview that row's track on the norns screen |
+
+Choose the triad or seventh type in **PARAMETERS → EDIT → TRACK**. **E1** selects the track; **E2/E3** move it. Available actions on existing tracks are dim, selected actions bright, and frozen controls blink. Empty rows remain dark.
+
+In the example, track 1 produces a **minor triad** and **retriggers** when it participates in a meeting. `LFO HOLD 2/3` means two of its three active mapped destinations are frozen; the remaining destination can continue moving. The footer reports the effective rate, probability and ratchet count: `x1  P75%  R2 int`.
+
+The LFO line can also show `off`, `ON`, or `ON no targets`. The footer uses `Poff` or `Roff` when the corresponding control is disabled. `R2 int` means two strikes for intersection retrigger while continuous ratchet is off. Screen values refresh about ten times per second when modulation is moving; musical values are sampled at step boundaries.
+
+### Switch page
+
+![Page selection screen with the three bottom-row page shortcuts](docs/images/page-select.svg)
+
+Hold the bottom-right Grid pad **(16,8)**, press one of these pads, then release:
 
 | Pad | Page |
 | --- | --- |
@@ -40,37 +129,21 @@ Hold the bottom-right pad **(16,8)**, press a page selector, then release:
 | (14,8) | Lines |
 | (15,8) | Intersections |
 
-The corner pad alone does not change page. While it is held, page selection takes precedence over other bottom-row actions, including controls for track 8.
+The temporary `SELECT PAGE` screen reminds you of these shortcuts. Holding the corner alone leaves the current page selected. While it is held, navigation takes priority over other bottom-row controls, including undo and track 8's controls.
 
-### Canvas
+### Preview one track
 
-Hold two pads to draw a straight horizontal, vertical or diagonal line. Press pads on a line to toggle its steps. On the bottom row, pads 1–8 recall snapshots, 10–11 record or play snapshot sequences, 13 undo (hold ALT on 15 and press 13 to redo), and 15 is ALT. Pads 9, 12 and 14 are blank. Hold pads 15 and 1–8 together to overwrite a snapshot.
+![Track preview screen showing the diagonal sequence of track 3](docs/images/track-preview.svg)
 
-On Canvas, E2 moves all lines vertically and E3 moves all lines horizontally. K2 resets the page; K3 clears it. Undo covers manual drawing, deletion, step toggles, clear and encoder moves during the current session.
+On Intersections, hold **column 15 on a track's row**. The norns screen temporarily shows only that track's drawing and moving playhead, while Grid stays on Intersections. `TRACK 3` identifies the track in this example. Release the pad to return to its parameter readout, as the footer `release 15: parameters` indicates.
 
-### Lines
+This lets you inspect a line while keeping the intersection controls available. It is a temporary view, not a fourth performance page.
 
-Each Grid row controls one track. Tap column 1 to mute; hold for solo. Columns 2–5 set direction (forward, reverse, pendulum, random); 6 toggles ratchet; 7 toggles probability; 8 is a separator; 9–15 select rates ×2, ×1, ÷2, ÷3, ÷4, ÷6 and ÷8. Hold 6 or 7 to freeze or release that modulated value. A long press does not also perform the tap.
+## Save, load and import
 
-E1 selects a track; E2/E3 move it. Probability amount, repeat count and other track values are set in **PARAMETERS → EDIT → TRACK**.
+Anima stores its projects in `dust/data/anima/`. Use **PARAMETERS → EDIT → SAVE/LOAD → save doodle / load doodle** for Anima projects. Keep the `.doodle` and its matching `.pset` together: the preset contains sound settings as well as other parameters.
 
-### Intersections
-
-Columns 1–5 select harmonic actions, 6 separates the groups, and 7–12 select rhythmic actions. Press the active action again to turn it off. Column 13 is blank. Column 14 toggles the track's LFO master; hold it to freeze or release all mapped destinations. Hold column 15 on a track row to show that track's moving line on the norns screen while Grid remains on Intersections. E1 selects a track; E2/E3 move it.
-
-Existing tracks have dim available pads; selected actions are bright. Empty rows, separators and unassigned columns stay dark. Frozen controls blink at 2 Hz, including while transport is stopped.
-
-## What the norns screen shows
-
-| View | Display |
-| --- | --- |
-| Canvas | `anima / CANVAS`, the 16×7 drawing area, then save feedback or `K2 reset   K3 clear` |
-| Lines | Track number and optional `ORIG`; direction/rate and active MUTE/SOLO flags; output (including selected n.b. voice); probability and source; ratchet and source; then mapped octave, transpose, duration and velocity values |
-| Intersections | Selected harmonic and rhythmic actions; LFO state; effective rate, probability and ratchet |
-| Page selection | `SELECT PAGE`, the three page names, and the hold instruction |
-| Track preview | `TRACK n`, that track's active steps, and `release 15: parameters` |
-
-The Lines screen uses `BASE`, `LFO` or `HOLD` to identify probability/ratchet values. Its dim final row uses `O`, `T`, `L` and `V` for other mapped destinations; `*` marks a frozen value. Intersections reports `Poff`/`Roff` when those controls are disabled and `R2 int` for intersection-only retrigger. Live screen readings update about ten times per second; musical values are still sampled at step boundaries.
+To import an original Animator project, choose **load Animator original** in the same menu. It opens `dust/data/animator/`. The `.pset` must sit alongside the `.doodle` with the same name. Saving from Anima writes a new copy into `dust/data/anima/`; the original files remain in their source folder.
 
 ## Per-track modulation
 
@@ -91,6 +164,10 @@ Imported Animator projects can select **COMPOSITION → playback = Animator orig
 The source includes a local test suite (`tests/run.sh`). The 0.5.6 development record reports 134 passing local scenarios, including parameter, persistence, migration, playback, modulation, Grid, routing and cleanup simulations. Devices and n.b. voices in these tests are simulated; they do not replace testing on a norns and the user's connected hardware. See [detailed Italian verification notes](docs/VERIFICA_IT.md) and the [Italian guide](docs/GUIDA_IT.md).
 
 See the [changelog](docs/CHANGELOG.md) for the 0.5.x development history.
+
+## Development
+
+Developed by Giovanni Lami with AI assistance (ChatGPT / OpenAI Codex) for implementation, debugging, tests and documentation. Musical direction, feature decisions and evaluation on the instrument are by Giovanni Lami. The original Animator concept and inherited code remain credited to Crim and the contributors identified below.
 
 ## Credits and licensing
 

@@ -87,6 +87,15 @@ package.preload['nb/lib/nb']=function() error('standalone NB absent') end
 include=function(path) return dofile(path:gsub('^anima/','')..'.lua') end
 dofile('anima.lua')
 init()
+-- SAVE/LOAD exposes native save/load plus the public upstream importer.
+local saveLoadIndex=params.lookup['SAVE/LOAD']
+assert(saveLoadIndex,'SAVE/LOAD group exists')
+assert(params.params[saveLoadIndex].n==3,'SAVE/LOAD contains exactly three actions')
+for offset,id in ipairs({'save','load','import_animator'}) do
+  assert(params.params[saveLoadIndex+offset].id==id,'unexpected SAVE/LOAD action')
+end
+assert(params.params[saveLoadIndex+4].name=='COMPOSITION','next group remains separate')
+print('PASS SAVE/LOAD keeps save, load and original Animator import NB '..(mode or 'absent'))
 assert(engine.name=='MollyThePoly','engine preserved after NB require')
 assert(not params.lookup.output,'no global output in EDIT')
 for i=1,8 do

@@ -182,7 +182,7 @@ tests['saving live edits does not overwrite a stored snapshot'] = function()
   eq(a.sequencers[1].intersect, 2, 'stored rule unchanged')
 end
 
-tests['snapshots preserve Animator 2 performance state'] = function()
+tests['snapshots preserve legacy performance state'] = function()
   local a = setup()
   add(a, 1, 2, 1)
   local seq = a.sequencers[1]

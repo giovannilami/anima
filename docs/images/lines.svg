@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="768" height="384" viewBox="0 0 128 64" role="img" aria-labelledby="title desc">
+<title id="title">Anima: Lines</title>
+<desc id="desc">Selected track 1: forward at x1, n.b. output, probability modulated by LFO, ratchet held. Illustrative values; labels and row positions follow lib/ui.lua.</desc>
+<rect width="128" height="64" fill="#000000"/>
+<g font-family="Helvetica, Arial, sans-serif" font-size="8" font-weight="400">
+<text x="4" y="9" fill="#ffffff">LINES  1</text>
+<text x="4" y="21" fill="#ffffff">forward x1</text>
+<text x="4" y="32" fill="#ffffff">n.b.: fluid 1</text>
+<text x="4" y="43" fill="#ffffff">prob 75% LFO</text>
+<text x="4" y="54" fill="#ffffff">ratchet 2 HOLD</text>
+<text x="4" y="63" fill="#b8b8b8">O+1 T-12 L120 V96</text>
+</g>
+</svg>

@@ -104,7 +104,7 @@ tests['rate changes latch at boundaries and each ratchet burst keeps its sampled
  for i=1,15 do a.count() end
  assert(#emitted==2);a.count();assert(#emitted==3,'slow rate lasts its complete 16-tick interval')
 end
-tests['old Animator 2 snapshots import with modulation off even after using new LFOs']=function()
+tests['old legacy snapshots import with modulation off even after using new LFOs']=function()
  local a,seq=setup();a.handleSelectSnapshot{i=1};assert(a.save('old-anima-import'))
  local file=dataDir..'/old-anima-import.doodle'
  local old=assert(tab.load(file));old.formatVersion=3

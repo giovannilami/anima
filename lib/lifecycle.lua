@@ -6,7 +6,7 @@ function L.stop_stale_lfos(metros)
     if metros.assigned and metros.assigned[id] and type(timer.event)=='function' then
       local info = debug.getinfo(timer.event,'S')
       local source = info and info.source or ''
-      if source:match('/animator/lib/hnds%.lua$') or source:match('/animator2/lib/hnds%.lua$') or source:match('/anima/lib/hnds%.lua$') then
+      if source:match('/animator/lib/hnds%.lua$') or source:match('/anima/lib/hnds%.lua$') then
         pcall(metros.free,id)
       end
     end

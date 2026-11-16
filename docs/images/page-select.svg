@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="768" height="384" viewBox="0 0 128 64" role="img" aria-labelledby="title desc">
+<title id="title">Anima: Page selection</title>
+<desc id="desc">Temporary screen while holding Grid pad 16,8. Bottom-row pads 13, 14 and 15 select Canvas, Lines and Intersections.</desc>
+<rect width="128" height="64" fill="#000000"/>
+<g font-family="Helvetica, Arial, sans-serif" font-size="8" font-weight="400">
+<text x="4" y="12" fill="#ffffff">SELECT PAGE</text>
+<text x="4" y="28" fill="#ffffff">13 canvas   14 lines</text>
+<text x="4" y="40" fill="#ffffff">15 intersections</text>
+<text x="4" y="58" fill="#b8b8b8">hold corner + press page</text>
+</g>
+</svg>

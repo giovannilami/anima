@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="768" height="384" viewBox="0 0 128 64" role="img" aria-labelledby="title desc">
+<title id="title">Anima: Canvas</title>
+<desc id="desc">2:1 screen schematic. A horizontal line intersects a vertical line; a 45-degree diagonal intersects both at distinct cells. Diagonal cells touch only at their corners. Cells are enlarged for clarity; the device draws smaller squares.</desc>
+<rect width="128" height="64" fill="#000000"/>
+<g font-family="Helvetica, Arial, sans-serif" font-size="8" font-weight="400">
+<text x="4" y="7" fill="#b8b8b8">anima / CANVAS</text><rect x="32" y="26" width="5" height="5" fill="#999999"/>
+<rect x="37" y="26" width="5" height="5" fill="#999999"/>
+<rect x="42" y="26" width="5" height="5" fill="#ffffff"/>
+<rect x="47" y="11" width="5" height="5" fill="#999999"/>
+<rect x="47" y="26" width="5" height="5" fill="#999999"/>
+<rect x="52" y="16" width="5" height="5" fill="#999999"/>
+<rect x="52" y="26" width="5" height="5" fill="#999999"/>
+<rect x="57" y="21" width="5" height="5" fill="#999999"/>
+<rect x="57" y="26" width="5" height="5" fill="#999999"/>
+<rect x="62" y="26" width="5" height="5" fill="#999999"/>
+<rect x="67" y="11" width="5" height="5" fill="#999999"/>
+<rect x="67" y="16" width="5" height="5" fill="#ffffff"/>
+<rect x="67" y="21" width="5" height="5" fill="#999999"/>
+<rect x="67" y="26" width="5" height="5" fill="#999999"/>
+<rect x="67" y="31" width="5" height="5" fill="#999999"/>
+<rect x="67" y="36" width="5" height="5" fill="#999999"/>
+<rect x="67" y="41" width="5" height="5" fill="#999999"/>
+<rect x="72" y="26" width="5" height="5" fill="#999999"/>
+<rect x="72" y="36" width="5" height="5" fill="#ffffff"/>
+<rect x="77" y="26" width="5" height="5" fill="#999999"/>
+<rect x="77" y="41" width="5" height="5" fill="#999999"/>
+<rect x="82" y="26" width="5" height="5" fill="#999999"/>
+<rect x="87" y="26" width="5" height="5" fill="#999999"/>
+<rect x="92" y="26" width="5" height="5" fill="#999999"/>
+<rect x="97" y="26" width="5" height="5" fill="#999999"/><text x="4" y="60" fill="#b8b8b8">K2 reset   K3 clear</text>
+</g>
+</svg>

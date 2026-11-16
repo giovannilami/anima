@@ -15,15 +15,15 @@ Il cambio script rilascia esplicitamente il callback della Grid.
 Non cambiano le tre pagine, le pressioni, le combinazioni di tasti o il playback.
 La modalità `COMPOSITION > playback` scelta e salvata rimane valida.
 
-Anima aggiunge alla base Animator 2 0.4.3 LFO per traccia, freeze e undo/redo. La suite locale copre il comportamento software; verifica comunque il tuo setup hardware prima di usarla dal vivo.
+Anima estende Animator con LFO per traccia, freeze e undo/redo. La suite locale copre il comportamento software; verifica comunque il tuo setup hardware prima di usarla dal vivo.
 
 ## Installazione e doodle precedenti
 
 1. Estrai lo ZIP e copia la cartella **anima** dentro `dust/code/` tramite Maiden. Il file principale deve risultare `dust/code/anima/anima.lua`.
-2. Se aggiorni una versione precedente di anima, sostituisci soltanto `dust/code/anima/` e conserva `dust/data/anima/`. Lascia installato Animator 2 0.4.3 e conserva anche `dust/data/animator2/`.
+2. Se aggiorni una versione precedente di anima, sostituisci soltanto `dust/code/anima/` e conserva `dust/data/anima/`.
 3. Carica **anima** dal menu SELECT.
-4. In PARAMETERS > EDIT > SAVE/LOAD, scegli **load Animator 2 doodle** per aprire un tuo salvataggio precedente. Il relativo `.pset` deve essere accanto al `.doodle`.
-5. Salva dal menu **save doodle**: la copia verrà scritta in `dust/data/anima/`. La coppia di file originale resta nella cartella di Animator 2.
+4. In PARAMETERS > EDIT > SAVE/LOAD, scegli **load Animator original** per aprire un tuo salvataggio precedente. Il relativo `.pset` deve essere accanto al `.doodle`.
+5. Salva dal menu **save doodle**: la copia verrà scritta in `dust/data/anima/`. La coppia di file originale resta nella cartella di Animator.
 
 Il formato include configurazione e attivazione degli LFO per tutti gli snapshot. Nei vecchi doodle i nuovi LFO partono spenti. Le assegnazioni n.b., MIDI e Crow restano quelle salvate. I parametri sonori delle voci n.b. rimangono condivisi fra gli snapshot.
 

@@ -372,7 +372,7 @@ local function applySnapshot(snapshot)
     if captured then
       Settings.apply(i, captured, animator.sequencers[i])
     elseif savedSeq then
-      -- Preserve per-line performance fields in earlier Animator 2 prototypes.
+      -- Preserve per-line performance fields in earlier development prototypes.
       Settings.apply(i, Settings.capture(i, savedSeq), animator.sequencers[i])
     end
     -- norns only runs parameter actions when the value changes. A newly
@@ -535,7 +535,7 @@ local function loadDoodle(path)
         seq.triadType = seq.triadType or 1
         seq.seventhType = seq.seventhType or 1
         if not doodle.trackSettings then
-          -- Pre-format-3 Animator 2 prototypes used this output order.
+          -- Pre-format-3 development prototypes used this output order.
           -- Genuine original Animator files are converted above.
           local routes = {2,10,4,7,11,11,2,8}
           seq.output = seq.output or routes[legacy.output] or params:get('seq' .. i .. 'output')
