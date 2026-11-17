@@ -1,4 +1,5 @@
--- Anima 0.5.6
+-- Anima 0.5.6 @giovannilami
+-- https://llllllll.co/t/anima/75862
 --
 -- -- | /
 --

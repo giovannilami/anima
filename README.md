@@ -2,6 +2,8 @@
 
 **Anima** is an eight-track, two-dimensional sequencer for monome norns and a 16×8 Grid. Draw lines on the Grid; their active steps generate notes as their playheads advance and meet. Each track can use its own clock division, direction, articulation, modulation and output route.
 
+**Discussion and support:** [Anima on Lines](https://llllllll.co/t/anima/75862).
+
 Anima is an adaptation and extension of [Animator by Crim](https://github.com/crimclark/animator). It imports original Animator doodles, and can optionally run imported projects with Animator's original playback rules.
 
 > **Release status:** version 0.5.6 is the prepared release build. Its interface and software behavior have been exercised in local simulations.
