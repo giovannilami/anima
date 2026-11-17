@@ -213,6 +213,8 @@ Developed by Giovanni Lami with AI assistance (ChatGPT / OpenAI Codex) for imple
 
 Anima is based on [Animator by Crim](https://github.com/crimclark/animator); the original position-LFO implementation credits @justmat in `lib/hnds.lua`. This derivative was developed by Giovanni Lami.
 
-I contacted Crim on Lines to ask about sharing this adaptation and its licensing, but have not yet received a reply. I could not find a license in the original Animator repository when preparing this release.
+On 16 November 2026, Crim (Tim Clark) kindly confirmed by email that he was happy for me to fork Animator, make updates and share Anima on Lines. Regarding sharing and licensing, he wrote:
 
-If the original authors would like to discuss attribution, licensing or the availability of this adaptation, please open an issue or contact me. No repository-wide open-source license has been assigned to the inherited code.
+> Feel free to share it on Lines and don't worry about the license.
+
+He also welcomed the new features introduced in Anima. Many thanks to Crim for his encouragement and for creating Animator, which remains the foundation of this project. The original code and contributions remain credited to their respective authors. No specific license was designated in that exchange.
